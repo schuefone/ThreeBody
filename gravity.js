@@ -2,7 +2,7 @@
 // license: creative commons, BY-SA
 var canvas;
 var balls;
-var G; // gravitational constant
+var G,R; // gravitational constant
 var ship;
 
 function setup() {
@@ -12,15 +12,19 @@ function setup() {
  canvas.parent('threebody');
  ellipseMode(RADIUS);
  balls = [];
- colors = [color(255,0,0,100), color(0,255,0,100), color(0,0,255),100]
+ colors = [color(255,0,0,50), color(0,255,0,50), color(0,0,255,50)]
+
+ // Gravitational constant
+ G = 5;
+ R = 100;
 
  // Three balls
  var N = 3;
- var v = 0.5;  // tangential speed
- var R = 100;
+ var m = 1.725;
+ var v = sqrt(G*m/R);  // 3 body initial circular motion
 
  for (var i = 0; i<N; i++) {
-  b = new Ball(5, colors[i], 10);
+  b = new Ball(2, colors[i], m);
   b.thrust=false;
   b.position.x = width/2 + R*cos(i*2*PI/N);
   b.position.y = height/2 + R*sin(i*2*PI/N);
@@ -30,36 +34,30 @@ function setup() {
  }
 
 
- // Gravitational constant
- G = 5;
 
+ /*
  var text = createDiv('<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">ThreeBody</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http://carrot.whitman.edu" property="cc:attributionName" rel="cc:attributionURL">Albert Schueller</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.');
 
  text.style("width", "600px");
  text.position(10,height+10);
+ */
+
+
+ background(0);
+ drawRing(R);
 }
 
 function draw() {
- stroke(0);
- fill(255,255,255,10);
- rect(0,0,width-1,height-1);
+ //stroke(0);
+ //fill(255,255,255,10);
+ //rect(0,0,width-1,height-1);
  for(var i=0; i<balls.length; i++){
   balls[i].display();
   balls[i].update();
  }
  // Update gravity for each ball.
  gravity(balls);
- //stroke(0,255,0);
- //noFill();
- //ellipse(width/2,height/2,100,100);
- //console.log("dir: " + balls[0].direction);
-}
 
-function mouseClicked() {
- b = new Ball(10, color(255,0,0), 25);
- b.setPosition(createVector(mouseX, mouseY));
- b.setVelocity(createVector(random(-0.5,0.5),random(-0.5,0.5)));
- balls.push(b);
 }
 
 // A class that represents balls with mass and that react to gravity.
@@ -155,8 +153,8 @@ function gravity(b) {
    if (r< (b[i].radius + b[j].radius)) {
     r = (b[i].radius + b[j].radius);
    }
-   // Scale by Gm2/r^3 to get acceleration vector.
-   accel.mult(G*b[j].mass/pow(r,3));
+   // Scale by Gm_1m_2/r^3 to get acceleration vector.
+   accel.mult(G*b[j].mass*b[i].mass/pow(r,3));
    totalAccel.add(accel);
   }
   b[i].acceleration.set(totalAccel.x,totalAccel.y);
@@ -203,3 +201,17 @@ Ship.prototype.display = function(){
   }
   pop();
 };
+
+function drawRing(R) {
+ /* 
+  * draw a white ring on the initial circle, with fade at the edges
+  */
+ // width of concentric circles
+ var w = 10;
+ noFill()
+ for(var i=0;i<w;i++) {
+  stroke(255,255,255,255-255*i/w)
+  ellipse(width/2,height/2,R+i,R+i);
+  ellipse(width/2,height/2,R-i,R-i);
+ }
+}
