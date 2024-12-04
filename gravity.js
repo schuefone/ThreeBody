@@ -35,7 +35,7 @@ function setup() {
  
  ellipseMode(RADIUS);
  balls = [];
- colors = [color(255,255,0), color(0,255,0), color(0,0,255)]
+ colors = [color(255,255,0), color(0,255,0), color(200,200,255)]
 
  // Gravitational constant
  G = 5;
