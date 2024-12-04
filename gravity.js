@@ -1,18 +1,41 @@
 // by Albert Schueller, math prof at Whitman College
 // license: creative commons, BY-SA
+/*
+ * Layers, from lowest to highest:
+ * - starfield, background stars (startup)
+ * - traces (draw, don't clear, transparent)
+ * - reference shape (startup, transparent)
+ * - bodies (draw, clear, transparent)
+ */
+
 var canvas;
 var balls;
 var G,R; // gravitational constant
-var ship;
+// layer names
+var starfield, traces, reference, bodies;
 
 function setup() {
+ // set canvas width and height
+ var w = 1024;
+ var h = 768;
+
  // put setup code here
- canvas=createCanvas(1024,768);
+ // create base canvas
+ canvas=createCanvas(w,h);
  canvas.position(10,10);
  canvas.parent('threebody');
+
+
+ // Set up the bodies
+ /* context
+  * 3 equal point masses, equidistant around a circle with inital velocity
+  * set so that they track the circle until floating point error breaks the
+  * stability.
+  */
+ 
  ellipseMode(RADIUS);
  balls = [];
- colors = [color(255,0,0,50), color(0,255,0,50), color(0,0,255,50)]
+ colors = [color(255,255,0), color(0,255,0), color(0,0,255)]
 
  // Gravitational constant
  G = 5;
@@ -24,7 +47,7 @@ function setup() {
  var v = sqrt(G*m/R);  // 3 body initial circular motion
 
  for (var i = 0; i<N; i++) {
-  b = new Ball(2, colors[i], m);
+  b = new Ball(10, colors[i], m);
   b.thrust=false;
   b.position.x = width/2 + R*cos(i*2*PI/N);
   b.position.y = height/2 + R*sin(i*2*PI/N);
@@ -33,42 +56,60 @@ function setup() {
   balls.push(b);
  }
 
+ // Generate static layers
+ // generate random starfield
+ starfield = createGraphics(w,h);
+ generateStarfield(starfield);
 
+ // generate reference shape layer
+ reference = createGraphics(w,h);
+ generateReference(reference,R);
 
- /*
- var text = createDiv('<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br /><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/InteractiveResource" property="dct:title" rel="dct:type">ThreeBody</span> by <a xmlns:cc="http://creativecommons.org/ns#" href="http://carrot.whitman.edu" property="cc:attributionName" rel="cc:attributionURL">Albert Schueller</a> is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.');
+ // generate bodies layer
+ bodies = createGraphics(w,h);
+ bodies.clear();
 
- text.style("width", "600px");
- text.position(10,height+10);
- */
+ // generate traces layer
+ traces = createGraphics(w,h);
+ traces.clear();
 
-
- background(0);
- drawRing(R);
 }
 
 function draw() {
- //stroke(0);
- //fill(255,255,255,10);
- //rect(0,0,width-1,height-1);
+ // wipe the canvas
+ clear()
+ 
+ // display and update masses
+ bodies.clear()
  for(var i=0; i<balls.length; i++){
-  balls[i].display();
+  balls[i].display(bodies, traces);
   balls[i].update();
  }
- // Update gravity for each ball.
+
+ // Update gravity force for each ball.
  gravity(balls);
 
+ // render the background starfield
+ image(starfield,0,0);
+ // render the traces
+ image(traces,0,0);
+ // render the reference shape
+ //image(reference,0,0);
+ // render the bodies layer
+ image(bodies,0,0);
+ 
 }
 
+//////////////////////////////////////////////////////////////////////////
 // A class that represents balls with mass and that react to gravity.
-var Ball = function(radius, color, mass) {
+var Ball = function(radius, c, mass) {
 
   // Initial time, time step
   this.t = 0;
 
   // Input parameters
   this.radius = radius;
-  this.color = color;
+  this.c= c;
   this.mass = mass;
   this.position = createVector(width/2,height/2)
   this.velocity = createVector(0,0)
@@ -86,44 +127,39 @@ Ball.prototype.update = function(){
  // update position
  this.position.add(this.velocity);
 
- // Bounce checks.
- bounce = false;
- if (bounce) {
-  // top wall collision
-  if(this.position.y < this.radius) {
-   this.position.y = 2*this.radius - this.position.y;
-   this.velocity.y *= -1;
-  }
-
-  // bottom wall collision
-  if(this.position.y > height-this.radius) {
-   this.position.y = 2*(height - this.radius) - this.position.y;
-   this.velocity.y *= -1;
-  }
-
-  // left wall collision
-  if(this.position.x <this.radius) {
-   this.position.x = 2*this.radius - this.position.x;
-   this.velocity.x *= -1;
-  }
-
-  // right wall collision
-  if(this.position.x >width-this.radius) {
-   this.position.x = 2*(width - this.radius) - this.position.x;
-   this.velocity.x *= -1;
-  }
- }
-
-
 };
 
 // Method to display
-Ball.prototype.display = function() {
- fill(this.color);
- stroke(0);
- strokeWeight(1);
- noStroke();
- ellipse(this.position.x,this.position.y,this.radius,this.radius);
+Ball.prototype.display = function(bodies, traces) {
+ // trail density
+ var d = 0.001;
+ // trail half-width (pixels)
+ var tw = 3;
+
+ var temp_c = color(this.c);
+
+ // sketch the bodies on the bodies layer
+ bodies.noFill()
+ // fading concentric circles
+ for(var i=0; i<=this.radius; i++) {
+  temp_c.setAlpha(255 - i*255/this.radius);
+  bodies.stroke(temp_c)
+  bodies.ellipse(this.position.x,this.position.y,i,i);
+ }
+
+ // sketch the trail on the traces layer
+ temp_c.setAlpha(255);
+ traces.stroke(temp_c);
+ for(var i=-tw + this.position.x; i<=tw+this.position.x; i++) {
+  for(var j=-tw + this.position.y; j<=tw+this.position.y; j++) {
+   if(random() < d) {
+    traces.point(i,j);
+   }
+  }
+ }
+ // single thin trace
+ traces.stroke(temp_c);
+ traces.point(this.position.x,this.position.y);
 };
 
 // Method to set position vector
@@ -162,56 +198,47 @@ function gravity(b) {
 
 }
 
-// Define the Ship constructor
-function Ship(radius, color, mass, dir=0) {
-  // Call the parent constructor, making sure (using Function#call)
-  // that "this" is set correctly during the call
-  Ball.call(this, radius, color, mass);
-
-  // Initialize our Ship-specific properties, radians, 0 points east,
-  // positive rotate clockwise from there
-  this.direction = dir;
-  this.thrust = false;
-}
-
-// Create a Ship.prototype object that inherits from Ball.prototype.
-// Note: A common error here is to use "new Ball()" to create the
-// Ship.prototype. That's incorrect for several reasons, not least 
-// that we don't have anything to give Ball for the "firstName" 
-// argument. The correct place to call Ball is above, where we call 
-// it from Ship.
-Ship.prototype = Object.create(Ball.prototype); // See note below
-
-// Set the "constructor" property to refer to Ship
-Ship.prototype.constructor = Ship;
-
-// Replace the "display" method
-Ship.prototype.display = function(){
-  push();
-  translate(this.position.x,this.position.y);
-  this.direction = this.velocity.heading();
-  rotate(this.direction);
-  stroke(color(0,0,0));
-  fill(this.color);
-  triangle(10,0,-10,5,-10,-5);
-  if (this.thrust) {
-    noStroke();
-    fill(color(255,0,0));
-    triangle(-10,-2,-10,2,-18,0);
-  }
-  pop();
-};
-
-function drawRing(R) {
+// this emphasizes the circular starting point
+function generateReference(reference,R) {
  /* 
   * draw a white ring on the initial circle, with fade at the edges
   */
- // width of concentric circles
+
+ // half of width of concentric circles
  var w = 10;
- noFill()
+
+ reference.clear();
+ reference.noFill();
+ 
  for(var i=0;i<w;i++) {
-  stroke(255,255,255,255-255*i/w)
-  ellipse(width/2,height/2,R+i,R+i);
-  ellipse(width/2,height/2,R-i,R-i);
+  reference.stroke(255,255,255,255-255*i/w)
+  reference.ellipse(width/2,height/2,2*R+i,2*R+i);
+  reference.ellipse(width/2,height/2,2*R-i,2*R-i);
  }
+
+}
+
+// Function to generate the random starfield
+function generateStarfield(starfield) {
+  starfield.background(0); // A dark background for the starfield
+
+  // Number of stars
+  let numStars = 200;
+
+  for (let i = 0; i < numStars; i++) {
+    // Random position
+    let x = random(starfield.width);
+    let y = random(starfield.height);
+
+    // Random star size
+    let size = random(1, 3);
+
+    // Random brightness
+    let brightness = random(150, 255);
+
+    // Draw the star
+    starfield.fill(brightness);
+    starfield.noStroke();
+    starfield.ellipse(x, y, size, size);
+  }
 }
