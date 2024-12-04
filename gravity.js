@@ -16,13 +16,13 @@ var starfield, traces, reference, bodies;
 
 function setup() {
  // set canvas width and height
- var w = 1024;
- var h = 768;
+ var w = 1440;
+ var h = 960;
 
  // put setup code here
  // create base canvas
  canvas=createCanvas(w,h);
- canvas.position(10,10);
+ //canvas.position(10,10);
  canvas.parent('threebody');
 
 
@@ -42,6 +42,7 @@ function setup() {
  R = 100;
 
  // Three balls
+ var p = 0.1
  var N = 3;
  var m = 1.725;
  var v = sqrt(G*m/R);  // 3 body initial circular motion
@@ -49,10 +50,10 @@ function setup() {
  for (var i = 0; i<N; i++) {
   b = new Ball(10, colors[i], m);
   b.thrust=false;
-  b.position.x = width/2 + R*cos(i*2*PI/N);
-  b.position.y = height/2 + R*sin(i*2*PI/N);
-  b.velocity.x = v*sin(i*2*PI/N);
-  b.velocity.y = -v*cos(i*2*PI/N);
+  b.position.x = width/2 + R*cos(i*2*PI/N+p);
+  b.position.y = height/2 + R*sin(i*2*PI/N+p);
+  b.velocity.x = v*sin(i*2*PI/N+p);
+  b.velocity.y = -v*cos(i*2*PI/N+p);
   balls.push(b);
  }
 
