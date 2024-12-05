@@ -8,6 +8,7 @@
  * - bodies (draw, clear, transparent)
  */
 
+
 var canvas;
 var balls;
 var G,R; // gravitational constant
@@ -15,9 +16,13 @@ var G,R; // gravitational constant
 var starfield, traces, reference, bodies;
 
 function setup() {
+ // set framerate
+ frameRate(30);
+ capturer = new CCapture({ format: 'webm', framerate: 30 });
+
  // set canvas width and height
- var w = 1440;
- var h = 960;
+ var w = 1024;
+ var h = 683;
 
  // put setup code here
  // create base canvas
@@ -98,7 +103,7 @@ function draw() {
  //image(reference,0,0);
  // render the bodies layer
  image(bodies,0,0);
- 
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -243,3 +248,6 @@ function generateStarfield(starfield) {
     starfield.ellipse(x, y, size, size);
   }
 }
+
+///////////////////////////////////////////////////////////////////////////
+// recording code
