@@ -17,8 +17,8 @@ var starfield, traces, reference, bodies;
 
 function setup() {
  // set framerate
- frameRate(30);
- capturer = new CCapture({ format: 'webm', framerate: 30 });
+ //frameRate(15);
+ //capturer = new CCapture({ format: 'webm', framerate: 15 });
 
  // set canvas width and height
  var w = 1024;
